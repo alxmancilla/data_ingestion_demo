@@ -120,7 +120,7 @@ Resources are written as **NDJSON** (newline-delimited JSON), the format used by
 1. Clone and enter the repository:
    ```bash
    git clone <repository-url>
-   cd data_ingestion_demo
+   cd fhir_demo
    ```
 
 2. Create and activate a virtual environment:
@@ -187,7 +187,7 @@ rich-notes). Set `PAUSE=0` to run non-interactively.
 ## Project Structure
 
 ```
-data_ingestion_demo/
+fhir_demo/
 ├── src/                          # Source code
 │   ├── fhir_data_generator.py    # FHIR R4 resource generator (NDJSON output)
 │   ├── fhir_data_ingestor.py     # Bulk ingestion with 5 modeling strategies
