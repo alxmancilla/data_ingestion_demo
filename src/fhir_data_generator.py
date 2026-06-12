@@ -345,9 +345,136 @@ VACCINES = [
     ("121", "Zoster", "http://hl7.org/fhir/sid/cvx"),  
 ]  
   
-# =============================================================================  
-# Data Generator Class  
-# =============================================================================  
+# =============================================================================
+# Clinical Note Templates
+# =============================================================================
+# Templates mix expanded clinical terms with abbreviations on purpose so that
+# Atlas Search synonym mappings (clinical_synonyms) and Vector Search both
+# return meaningful hits. Each template is keyed off a condition the encounter
+# carries; a generic template is used as a fallback.
+
+NOTE_TEMPLATES: dict[str, list[str]] = {
+    "Hypertension": [
+        "CC: Follow-up for HTN. HPI: {age}yo with longstanding hypertension, "
+        "home BP averaging 148/92. Denies chest pain or SOB. "
+        "A/P: Essential hypertension, suboptimal control. Increase lisinopril "
+        "to 20 mg daily, continue HCTZ, recheck BP in 4 weeks. Lifestyle "
+        "counseling on low-sodium diet and aerobic activity.",
+        "Patient presents for routine BP check. HTN diagnosed 6 years ago. "
+        "Current meds: amlodipine 10 mg, losartan 50 mg. BP today 138/86, HR 74. "
+        "Plan: continue current antihypertensive regimen, basic metabolic panel, "
+        "fasting lipid panel including LDL and HDL.",
+    ],
+    "Essential Hypertension": [
+        "Established patient with essential hypertension, on dual therapy. "
+        "BP 144/90, HR 78 regular. No headache, no blurred vision, no chest pain. "
+        "A: HTN, stage 1, uncontrolled. P: add chlorthalidone 12.5 mg daily, "
+        "monitor electrolytes, follow-up in 6 weeks.",
+    ],
+    "Type 2 Diabetes": [
+        "T2DM follow-up. HbA1c 8.2 (up from 7.4). FBG averaging 180. "
+        "Reports polyuria and fatigue, denies DKA symptoms. Compliant with "
+        "metformin 1000 mg BID. A/P: type 2 diabetes mellitus, poorly "
+        "controlled. Start empagliflozin 10 mg daily, dietitian referral, "
+        "repeat A1c in 3 months. Foot exam unremarkable.",
+        "Patient with T2DM x 8 years. HbA1c 7.1, improved from 7.8. "
+        "Continues metformin and semaglutide. No hypoglycemic events. "
+        "Annual diabetic eye exam scheduled. Plan: continue current regimen, "
+        "monitor blood glucose, recheck hemoglobin A1c in 3 months.",
+    ],
+    "Diabetes Mellitus": [
+        "DM follow-up visit. Patient with diabetes mellitus on basal insulin. "
+        "Fasting blood sugar 165, A1c 9.0. Discussed risk of DKA and HHS. "
+        "Plan: titrate glargine, add prandial insulin, diabetic education, "
+        "comprehensive metabolic panel and HbA1c in 6 weeks.",
+    ],
+    "Asthma": [
+        "Asthma exacerbation. Patient reports wheezing, cough, and chest "
+        "tightness over the past 3 days. Peak flow 60% of personal best. "
+        "Albuterol use increased to q4h. SpO2 95% on room air. A/P: moderate "
+        "asthma exacerbation. Start prednisone 40 mg daily x 5 days, continue "
+        "ICS/LABA, follow-up in 1 week, PFT in 1 month.",
+    ],
+    "COPD": [
+        "COPD follow-up. Patient with chronic obstructive pulmonary disease "
+        "(GOLD stage III), former smoker. Reports increased SOB on exertion "
+        "and chronic productive cough. SpO2 91% on room air. A/P: COPD with "
+        "chronic bronchitis component. Continue tiotropium and ICS/LABA, "
+        "pulmonary rehab referral, ABG and chest x-ray ordered.",
+        "Chronic obstructive pulmonary disease, acute exacerbation. Increased "
+        "dyspnea, productive cough with purulent sputum. ABG: pH 7.36, pCO2 48. "
+        "P: azithromycin 5-day course, prednisone taper, supplemental O2 2L NC, "
+        "smoking cessation counseling.",
+    ],
+    "Heart Failure": [
+        "CHF exacerbation. Patient with HFrEF (EF 30%) presenting with worsening "
+        "SOB, orthopnea, and bilateral lower extremity edema. JVD elevated. "
+        "BNP 1850. A/P: acute on chronic heart failure. IV furosemide, daily "
+        "weights, fluid restriction 1.5L, telemetry monitoring, ECG to evaluate "
+        "for AFib, echocardiogram tomorrow.",
+        "Congestive heart failure follow-up. Stable on guideline-directed medical "
+        "therapy: carvedilol, lisinopril, spironolactone. No recent admissions. "
+        "Weight stable. Plan: continue GDMT, BMP, repeat ECG, cardiology in 3 months.",
+    ],
+    "Hypothyroidism": [
+        "Hypothyroidism follow-up. Patient on levothyroxine 75 mcg daily. "
+        "Reports fatigue and cold intolerance. TSH 6.2 (elevated). "
+        "A/P: hypothyroidism, undertreated. Increase levothyroxine to 88 mcg, "
+        "recheck TSH and free T4 in 6 weeks.",
+    ],
+    "Depression": [
+        "Depression follow-up. PHQ-9 score 14 (moderate). Patient on sertraline "
+        "50 mg for 8 weeks with partial response. Denies SI/HI. Sleep poor, "
+        "appetite decreased. A/P: major depressive disorder. Increase sertraline "
+        "to 100 mg, continue therapy, follow-up in 4 weeks.",
+    ],
+    "Rheumatoid Arthritis": [
+        "RA follow-up. Patient with seropositive rheumatoid arthritis on "
+        "methotrexate and hydroxychloroquine. Morning stiffness 30 minutes, "
+        "mild synovitis MCP joints. CDAI 8. Plan: continue current DMARDs, "
+        "CBC, LFTs, follow-up in 3 months.",
+    ],
+}
+
+GENERIC_NOTE_TEMPLATES = [
+    "Patient presents for routine follow-up. Reviewed interim history. "
+    "No new complaints. Vitals stable: BP within normal limits, HR regular, "
+    "SpO2 98% on room air. Physical exam unremarkable. Plan: continue current "
+    "medications, age-appropriate preventive screening, follow-up in 6 months.",
+    "Annual wellness visit. Patient reports overall good health, exercising "
+    "regularly, non-smoker. BP 122/76, HR 68. Lipid panel showed LDL 105, "
+    "HDL 58. Plan: continue lifestyle measures, repeat labs in one year, "
+    "vaccinations updated.",
+    "ED visit for chest pain. ECG without acute ischemic changes, troponin "
+    "negative x2. Symptoms resolved. Likely musculoskeletal etiology. "
+    "Discharged with PCP follow-up, return precautions reviewed.",
+    "Patient evaluated for SOB. Lungs clear bilaterally, no wheezing. SpO2 97% "
+    "on room air. ECG normal sinus rhythm. Likely deconditioning. Plan: chest "
+    "x-ray, BMP, pulmonary function test if symptoms persist.",
+]
+
+
+def _clinical_note(condition_names: list[str]) -> str:
+    """Compose a short narrative referencing the encounter's conditions.
+
+    Picks a template per condition (or a generic one if no match), joins them,
+    and prepends a chief-complaint-style line. Output stays under ~800 chars
+    so embeddings remain meaningful.
+    """
+    parts: list[str] = []
+    for name in condition_names[:2]:
+        templates = NOTE_TEMPLATES.get(name)
+        if templates:
+            parts.append(random.choice(templates).format(age=random.randint(35, 85)))
+    if not parts:
+        parts.append(random.choice(GENERIC_NOTE_TEMPLATES))
+    return " ".join(parts)[:800]
+
+
+# =============================================================================
+# Data Generator Class
+# =============================================================================
+
   
 class FHIRDataGenerator:  
     """Generate realistic FHIR R4 test data"""  
@@ -819,35 +946,38 @@ class FHIRDataGenerator:
             } for _ in range(random.randint(2, 5))]  
         )  
       
-    def generate_document_reference(self, patient_id: str,   
-                                     encounter_id: str) -> DocumentReference:  
-        """Generate a DocumentReference resource"""  
-        return DocumentReference(  
-            id=self.generate_id(),  
-            status="current",  
-            type=CodeableConcept(  
-                coding=[Coding(  
-                    system="http://loinc.org",  
-                    code="34133-9",  
-                    display="Summary of episode note"  
-                )],  
-                text="Clinical Summary"  
-            ),  
-            subject=Reference(reference=f"Patient/{patient_id}"),  
-            date=self.random_date(),  
-            author=[Reference(  
-                reference=f"Practitioner/{random.choice(self.practitioners)}"  
-            )],  
-            content=[{  
-                "attachment": {  
-                    "contentType": "text/plain",  
-                    "data": fake.text(max_nb_chars=500)  
-                }  
-            }],  
-            context={  
-                "encounter": [{"reference": f"Encounter/{encounter_id}"}]  
-            }  
-        )  
+    def generate_document_reference(self, patient_id: str,
+                                     encounter_id: str,
+                                     condition_names: list[str] | None = None
+                                     ) -> DocumentReference:
+        """Generate a DocumentReference with a realistic clinical narrative."""
+        return DocumentReference(
+            id=self.generate_id(),
+            status="current",
+            type=CodeableConcept(
+                coding=[Coding(
+                    system="http://loinc.org",
+                    code="34133-9",
+                    display="Summary of episode note"
+                )],
+                text="Clinical Summary"
+            ),
+            subject=Reference(reference=f"Patient/{patient_id}"),
+            date=self.random_date(),
+            author=[Reference(
+                reference=f"Practitioner/{random.choice(self.practitioners)}"
+            )],
+            content=[{
+                "attachment": {
+                    "contentType": "text/plain",
+                    "data": _clinical_note(condition_names or [])
+                }
+            }],
+            context={
+                "encounter": [{"reference": f"Encounter/{encounter_id}"}]
+            }
+        )
+
       
     # -------------------------------------------------------------------------  
     # Main Generation Logic  
@@ -876,12 +1006,15 @@ class FHIRDataGenerator:
             encounter_id = encounter.id  
             resources.append(encounter.model_dump(by_alias=True, exclude_none=True))  
               
-            # Conditions (1-3 per encounter)  
-            condition_ids = []  
-            for _ in range(random.randint(1, 3)):  
-                condition = self.generate_condition(patient_id, encounter_id)  
-                condition_ids.append(condition.id)  
-                resources.append(condition.model_dump(by_alias=True, exclude_none=True))  
+            # Conditions (1-3 per encounter)
+            condition_ids = []
+            condition_names: list[str] = []
+            for _ in range(random.randint(1, 3)):
+                condition = self.generate_condition(patient_id, encounter_id)
+                condition_ids.append(condition.id)
+                condition_names.append(condition.code.text)
+                resources.append(condition.model_dump(by_alias=True, exclude_none=True))
+
               
             # Vital signs observations (5-10 per encounter)  
             for _ in range(random.randint(5, 10)):  
@@ -920,10 +1053,12 @@ class FHIRDataGenerator:
                 careplan = self.generate_careplan(patient_id, encounter_id, condition_ids)  
                 resources.append(careplan.model_dump(by_alias=True, exclude_none=True))  
               
-            # Document references (1-2 per encounter)  
-            for _ in range(random.randint(1, 2)):  
-                doc = self.generate_document_reference(patient_id, encounter_id)  
-                resources.append(doc.model_dump(by_alias=True, exclude_none=True))  
+            # Document references (1-2 per encounter)
+            for _ in range(random.randint(1, 2)):
+                doc = self.generate_document_reference(patient_id, encounter_id,
+                                                       condition_names)
+                resources.append(doc.model_dump(by_alias=True, exclude_none=True))
+
           
         return resources  
       

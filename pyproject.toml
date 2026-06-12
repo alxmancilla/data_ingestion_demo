@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "data-ingestion-demo"
+name = "fhir-demo"
 version = "0.1.0"
-description = "A data ingestion demo project"
+description = "FHIR R4 on MongoDB Atlas: ingestion, clinical analytics, Atlas Search, Vector Search + RAG, hybrid $rankFusion, Change Streams, and FHIR REST API"
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = []
